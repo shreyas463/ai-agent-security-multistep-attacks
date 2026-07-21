@@ -1,0 +1,14 @@
+{
+  "id": "shreyas463/ai-agent-security-multistep-attack",
+  "title": "AI Agent Security - Multi-Step Attack",
+  "code_file": "submission.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": false,
+  "dataset_sources": [],
+  "competition_sources": ["ai-agent-security-multi-step-tool-attacks"],
+  "kernel_sources": []
+}

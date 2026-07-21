@@ -110,7 +110,8 @@ Target models are **GGUF via llama.cpp on a T4 GPU**: `gpt_oss` (GPT-OSS 20B) an
 ├── src/
 │   └── attack.py                 # ⭐ the submission: AttackAlgorithm class
 ├── notebooks/
-│   └── submission.py             # Kaggle-notebook body that writes attack.py to /kaggle/working
+│   ├── submission.ipynb          # generated Kaggle notebook (writes attack.py + runs the server)
+│   └── kernel-metadata.json      # `kaggle kernels push` config (GPU, internet off, comp attached)
 ├── tests/
 │   └── smoke_test.py             # local smoke test against the SDK env
 ├── scripts/

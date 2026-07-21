@@ -1,4 +1,4 @@
-.PHONY: help venv fetch-sdk smoke test notebook submit clean
+.PHONY: help venv fetch-sdk smoke test local notebook push-kernel clean
 
 PY ?= python3
 VENV ?= .venv
@@ -11,8 +11,9 @@ help:
 	@echo "  make fetch-sdk  - download competition SDK+fixtures via Kaggle API (needs kaggle.json + accepted rules)"
 	@echo "  make smoke      - run the local smoke test against attack.py (+ SDK if installed)"
 	@echo "  make test       - run pytest"
-	@echo "  make notebook   - build notebooks/submission.ipynb from notebooks/submission.py"
-	@echo "  make submit      - submit the notebook (kaggle kernels push) — configure kernel-metadata.json first"
+	@echo "  make local      - scorer-equivalent local run (OptimalGuardrail + allow-all sanity)"
+	@echo "  make notebook   - regenerate notebooks/submission.ipynb from src/attack.py"
+	@echo "  make push-kernel - push the notebook to Kaggle (kaggle kernels push -p notebooks/)"
 	@echo "  make clean      - remove caches / build artifacts"
 
 venv:
@@ -30,8 +31,14 @@ smoke:
 test:
 	$(BIN)/pytest -q || $(PY) -m pytest -q
 
+local:
+	$(BIN)/python tests/run_local.py $(BUDGET)
+
 notebook:
-	$(BIN)/jupytext --to notebook notebooks/submission.py -o notebooks/submission.ipynb
+	$(BIN)/python scripts/build_notebook.py
+
+push-kernel: notebook
+	$(BIN)/kaggle kernels push -p notebooks/
 
 clean:
-	rm -rf **/__pycache__ .pytest_cache notebooks/submission.ipynb
+	rm -rf **/__pycache__ .pytest_cache
