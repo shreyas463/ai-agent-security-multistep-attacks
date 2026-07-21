@@ -38,7 +38,8 @@ notebook:
 	$(BIN)/python scripts/build_notebook.py
 
 push-kernel: notebook
-	$(BIN)/kaggle kernels push -p notebooks/
+	# This competition requires T4 (not the default P100). --accelerator overrides the metadata.
+	$(BIN)/kaggle kernels push -p notebooks/ --accelerator NvidiaTeslaT4
 
 clean:
 	rm -rf **/__pycache__ .pytest_cache

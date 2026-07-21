@@ -13,8 +13,12 @@ python scripts/build_notebook.py      # or: make notebook
 ## Option A — push via CLI, then submit in the UI (fastest)
 
 ```bash
-make push-kernel        # kaggle kernels push -p notebooks/   (private kernel, GPU, internet off)
+make push-kernel        # kaggle kernels push -p notebooks/ --accelerator NvidiaTeslaT4
 ```
+
+> **Accelerator must be T4.** This competition rejects P100 ("Your Notebook cannot use P100 GPUs")
+> — the models run on T4. `make push-kernel` passes `--accelerator NvidiaTeslaT4`; if you set it in
+> the Kaggle UI instead, pick **GPU T4** under the notebook's accelerator settings before submitting.
 
 Then on Kaggle:
 1. Open the kernel (it auto-runs on push). Wait for the **commit** run to finish — it validates
