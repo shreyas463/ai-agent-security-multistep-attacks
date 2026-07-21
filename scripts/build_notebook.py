@@ -1,14 +1,15 @@
 """
 Generate notebooks/submission.ipynb from src/attack.py (single source of truth).
 
-The notebook:
-  1. Writes attack.py to /kaggle/working/ via a %%writefile cell (no string-escaping hazards —
-     attack.py contains triple-quoted docstrings, so embedding it as a Python string would break).
-  2. Runs the competition inference server. On a normal commit ("Save Version") it runs a fast
-     local gateway pinned to the deterministic agent; the scored rerun (KAGGLE_IS_COMPETITION_RERUN
-     set) serves the real gpt_oss/gemma evaluation and ignores that pin.
+Harness (robust pattern used by top public notebooks):
+  Cell 1 — locate kaggle_evaluation under /kaggle/input and add it to sys.path (it's mounted as a
+           competition input, not pip-installed).
+  Cell 2 — %%writefile /kaggle/working/attack.py with the full src/attack.py.
+  Cell 3 — compile + contract sanity check.
+  Cell 4 — on the scored rerun (KAGGLE_IS_COMPETITION_RERUN) call the inference server's serve();
+           on a normal commit just write a placeholder submission.csv (no slow local gateway).
 
-Regenerate after editing src/attack.py:  python scripts/build_notebook.py
+Regenerate after editing src/attack.py:  python scripts/build_notebook.py  (or: make notebook)
 """
 import json
 from pathlib import Path
@@ -29,33 +30,53 @@ def md_cell(src: str) -> dict:
 
 INTRO = """# AI Agent Security — Multi-Step Tool Attacks
 
-This notebook writes `attack.py` to `/kaggle/working/` and runs the competition inference server.
-The scored rerun loads `attack.py`, runs the `AttackAlgorithm` against gpt_oss and gemma, replays
+Writes `attack.py` to `/kaggle/working/` and, on the scored rerun, serves the competition
+inference server. The evaluator loads `AttackAlgorithm`, runs it against gpt_oss + gemma, replays
 the returned candidates against the public (OptimalGuardrail) and private guardrails, and scores.
+"""
 
-> Harness reconstructed from the competition SDK. If the official starter notebook differs, prefer
-> its server-run cell and keep only the `%%writefile attack.py` cell below.
+SETUP_CELL = """import glob, os, sys
+from pathlib import Path
+
+# kaggle_evaluation is mounted under /kaggle/input for this competition (not pip-installed).
+for c in glob.glob('/kaggle/input/**/kaggle_evaluation', recursive=True):
+    root = str(Path(c).parent)
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    break
+
+Path('/kaggle/working').mkdir(parents=True, exist_ok=True)
+print('setup done | IS_RERUN:', bool(os.getenv('KAGGLE_IS_COMPETITION_RERUN')))
 """
 
 WRITE_CELL = "%%writefile /kaggle/working/attack.py\n" + ATTACK_SRC
 
-RUN_CELL = """import os
+CHECK_CELL = """import py_compile
+py_compile.compile('/kaggle/working/attack.py', doraise=True)
+src = open('/kaggle/working/attack.py').read()
+assert 'class AttackAlgorithm(AttackAlgorithmBase)' in src and 'def run(' in src
+print('attack.py compiled + contract OK')
+"""
 
-# Commit / interactive runs (no rerun flag) execute a LOCAL gateway. Pin it to the fast
-# deterministic agent so "Save Version" validates quickly instead of running the full
-# 2-model x 9000s evaluation. The scored rerun sets KAGGLE_IS_COMPETITION_RERUN and ignores this.
-if not os.getenv("KAGGLE_IS_COMPETITION_RERUN"):
-    os.environ.setdefault("AICOMP_MODEL_NAMES", "deterministic")
+RUN_CELL = """import os, csv
 
-from kaggle_evaluation.jed_attack_134815.jed_attack_inference_server import (
-    JEDAttackInferenceServer,
-)
-
-JEDAttackInferenceServer().run()
+if os.getenv('KAGGLE_IS_COMPETITION_RERUN'):
+    # Scored rerun: serve the attack to the competition gateway (runs the real gpt_oss/gemma eval).
+    import kaggle_evaluation.jed_attack_134815.jed_attack_inference_server as server
+    server.JEDAttackInferenceServer().serve()
+else:
+    # Commit / interactive: write a placeholder so Save Version is instant. The rerun overwrites it.
+    with open('/kaggle/working/submission.csv', 'w', newline='') as f:
+        w = csv.writer(f)
+        w.writerow(['Id', 'Score'])
+        for row in ['gpt_oss_public', 'gpt_oss_private', 'gemma_public', 'gemma_private']:
+            w.writerow([row, 0.0])
+    print('placeholder submission.csv written')
 """
 
 nb = {
-    "cells": [md_cell(INTRO), code_cell(WRITE_CELL), code_cell(RUN_CELL)],
+    "cells": [md_cell(INTRO), code_cell(SETUP_CELL), code_cell(WRITE_CELL),
+              code_cell(CHECK_CELL), code_cell(RUN_CELL)],
     "metadata": {
         "kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
         "language_info": {"name": "python"},

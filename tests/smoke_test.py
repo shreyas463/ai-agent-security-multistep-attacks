@@ -40,11 +40,13 @@ def check_end_to_end() -> bool:
     env = build_attack_env(seed=123, fixtures_dir=fx, agent_factory=af,
                            guardrail=GuardrailBase(), env_selection="sandbox", max_tool_hops=8)
     env.reset()
-    cands = attack.AttackAlgorithm().run(env, AttackRunConfig(time_budget_s=45.0))
-    assert isinstance(cands, list) and all(isinstance(c, AttackCandidate) for c in cands)
-    print(f"[ok] ran attack vs deterministic agent (allow-all) — {len(cands)} breaching candidate(s)")
-    for c in cands[:6]:
-        print(f"     - {list(c.user_messages)}")
+    cands = attack.AttackAlgorithm().run(env, AttackRunConfig(time_budget_s=30.0))
+    assert isinstance(cands, list) and cands and all(isinstance(c, AttackCandidate) for c in cands)
+    # The deterministic agent won't http.post from a user message, so run() returns fallback
+    # single-post candidates. That validates the contract; real gpt_oss/gemma execute the post.
+    print(f"[ok] ran attack vs deterministic agent — {len(cands)} candidate(s) (fallback expected)")
+    for c in cands[:3]:
+        print(f"     - {list(c.user_messages)[0][:90]}")
     return True
 
 
