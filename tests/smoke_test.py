@@ -23,36 +23,53 @@ def check_import() -> None:
     print("[ok] attack.py imports and AttackAlgorithm.run exists")
 
 
-def check_against_sdk() -> bool:
-    """Return True if we actually exercised the SDK env, False if it wasn't available."""
+def _get_env_factory():
+    """Prefer the real SDK env; fall back to the local mock for offline development.
+
+    Returns (factory, source_label).
+    """
     try:
-        # CONFIRM: the exact factory for a local environment in aicomp_sdk 3.1.0.
-        # Common shapes: aicomp_sdk.make_env(...) or aicomp_sdk.Environment(...).
         import aicomp_sdk  # type: ignore
+        # CONFIRM: exact factory name in aicomp_sdk 3.1.0 (make_env / Environment / ...).
+        factory = getattr(aicomp_sdk, "make_env", None) or getattr(aicomp_sdk, "Environment", None)
+        if factory is not None:
+            return factory, "aicomp_sdk (REAL)"
+        print("[warn] aicomp_sdk present but no make_env/Environment — CONFIRM the factory name")
     except Exception as e:
-        print(f"[skip] aicomp_sdk not installed ({e}); run scripts/fetch_sdk.sh first")
-        return False
+        print(f"[info] aicomp_sdk not installed ({e}); using local mock env")
 
-    make_env = getattr(aicomp_sdk, "make_env", None) or getattr(aicomp_sdk, "Environment", None)
-    if make_env is None:
-        print("[warn] aicomp_sdk present but no make_env/Environment found — CONFIRM the factory name")
-        return False
+    from mock_env import make_env  # local dev stand-in
+    return make_env, "mock_env (DEV)"
 
-    env = make_env(seed=123)  # CONFIRM kwargs
+
+def check_end_to_end() -> str:
+    """Run the attack loop against whichever env is available; return the source label."""
+    factory, source = _get_env_factory()
+    env = factory(seed=123)
     algo = attack.AttackAlgorithm()
     candidates = algo.run(env)
-    print(f"[ok] ran attack against SDK env — {len(candidates)} candidate(s)")
     assert len(candidates) <= attack.MAX_CANDIDATES
-    for c in candidates[:3]:
+    print(f"[ok] ran attack against {source} — {len(candidates)} candidate(s)")
+    for c in candidates:
         msgs = getattr(c, "messages", None)
         assert msgs is not None, "candidate missing .messages"
         assert len(msgs) <= attack.MAX_MESSAGES_PER_CANDIDATE
-        print(f"     - {getattr(c, 'label', '?')}: {len(msgs)} msg(s), "
-              f"predicates={getattr(c, 'meta', {}).get('predicates')}")
-    return True
+        print(f"     - {getattr(c, 'label', '?'):24s} "
+              f"predicates={getattr(c, 'meta', {}).get('predicates')} "
+              f"cell={getattr(c, 'meta', {}).get('cell')}")
+
+    # Score them with our local scorer so we get an offline signal.
+    sys.path.insert(0, str(REPO / "src"))
+    import scoring  # noqa: E402
+    result = scoring.score(scoring.findings_from_candidates(candidates))
+    print(f"[ok] local score: raw={result['raw_score']} "
+          f"normalized={result['normalized_score']:.3f} "
+          f"unique_cells={result['unique_cell_count']}")
+    return source
 
 
 if __name__ == "__main__":
     check_import()
-    exercised = check_against_sdk()
-    print("\nSMOKE TEST:", "FULL (SDK exercised)" if exercised else "IMPORT-ONLY (install SDK for full run)")
+    source = check_end_to_end()
+    full = source.endswith("(REAL)")
+    print("\nSMOKE TEST:", "FULL (SDK exercised)" if full else "DEV (mock env — install SDK for real run)")
