@@ -71,15 +71,19 @@ TEMPLATES = (
 )
 FALLBACK_INDEX = 0
 
-# Tuning (values proven by the public baseline; conservative on the replay budget).
+# Tuning. REPLAY_SAFE is the key completion/score lever: the gateway runs 2 models x 3 phases
+# (generation + public-replay + private-replay), each ~= this fraction of the 9000s budget, so
+# total wall-clock ~= 6 x REPLAY_SAFE x 2.5h. v4 used 0.99 -> ~15h, right at the notebook cap
+# (and likely why it ran so long). 0.50 targets ~7-8h total for a reliable finish, trading ~half
+# the candidates/score for completion. Raise it again once we've confirmed timing headroom.
 MAX_CANDIDATES = 2000
 MAX_MESSAGE_CHARS = 2000
 REPLAY_BUDGET_S = 9000.0
-REPLAY_SAFE = 0.99            # stop the returned set at 99% of the replay budget
+REPLAY_SAFE = 0.50           # stop the returned set at 50% of a single replay pass's budget
 MARGIN_S = 60.0              # never fill within this of the generation deadline
 SLOWEST0 = 24.0             # initial pessimistic per-trial latency estimate
 MARGIN_MULT = 1.35
-PROBE_REPS = 5              # trials per template during calibration
+PROBE_REPS = 4              # trials per template during calibration
 MIN_FIRE_RATE = 0.2        # a template must fire at least this often to be selectable
 WARMUP_INDEX = 900_000     # url index used for the discarded cold-start trial
 LOCAL_SAMPLE_N = 5
