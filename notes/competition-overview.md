@@ -81,7 +81,8 @@ severity_weights = {1:1, 2:2, 3:4, 4:8, 5:16}
 | Max tool hops per interaction | 8                                 |
 | Max candidates returned       | 2,000                             |
 | Max messages per candidate    | 32                                |
-| Max message length            | 10,000 chars                      |
+| Max message length            | 2,000 chars (SDK MAX_USER_MESSAGE_CHARS; overview page's "10,000" is wrong) |
+| Max findings replayed         | 2,000 (MAX_REPLAY_FINDINGS)       |
 | Fixed seed                    | 123                               |
 | Notebook                      | ≤ 15 h GPU run, internet disabled |
 
