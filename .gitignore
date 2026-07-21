@@ -1,0 +1,43 @@
+# --- Kaggle competition SDK / data (do NOT commit — MIT but redistribution restricted to participants) ---
+sdk/
+data/
+*.whl
+aicomp_sdk*/
+kaggle_evaluation/
+fixtures/
+web_corpus.json
+mail_seed.json
+file_seed/
+
+# --- Credentials ---
+kaggle.json
+.kaggle/
+*.pem
+*.key
+.env
+.env.*
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.python-version
+
+# --- Notebook / runtime artifacts ---
+.ipynb_checkpoints/
+submission.csv
+attack_output/
+traces/
+*.log
+
+# --- OS / editor ---
+.DS_Store
+.idea/
+.vscode/
+*.swp

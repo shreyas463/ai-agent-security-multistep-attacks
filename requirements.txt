@@ -1,0 +1,8 @@
+# Local development dependencies (NOT the submission runtime — Kaggle provides that).
+kaggle>=1.6.0          # competition data / SDK download + submit
+jupytext>=1.16.0       # convert notebooks/submission.py <-> .ipynb
+nbconvert>=7.0.0       # run/export notebooks locally
+pytest>=8.0.0          # test runner for tests/
+
+# The competition SDK (aicomp_sdk-3.1.0) is installed from the wheel by scripts/fetch_sdk.sh,
+# not from PyPI. It is not listed here on purpose.
