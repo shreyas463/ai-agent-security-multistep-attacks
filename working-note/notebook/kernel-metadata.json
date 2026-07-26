@@ -1,0 +1,14 @@
+{
+  "id": "shreyascppsc/jed-payload-blind-egress-working-note",
+  "title": "JED Payload Blind Egress Working Note",
+  "code_file": "working_note.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_tpu": false,
+  "enable_internet": false,
+  "dataset_sources": [],
+  "competition_sources": [],
+  "kernel_sources": []
+}
