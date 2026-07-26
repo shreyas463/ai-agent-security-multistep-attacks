@@ -100,10 +100,13 @@ class HardenedGuardrail(GuardrailBase):
     # --- secret-shape heuristics (leak #1 / content classification) -----------
     # Credential-shaped KEY=VALUE (or KEY: VALUE) lines. Keys are matched by
     # *meaning* (label), not by whether the surrounding path says "secret".
+    # A leading ``(?:[a-z0-9]+[._-])*`` allows vendor prefixes (``aws_``, ``db_``)
+    # so ``aws_secret_access_key=...`` matches on the key's *meaning*, not on any
+    # surrounding "secret" filename substring.
     _CRED_KEY_RE = re.compile(
-        r"(?i)\b(?:password|passwd|pwd|secret|token|api[_-]?key|access[_-]?key|"
-        r"secret[_-]?access[_-]?key|private[_-]?key|client[_-]?secret|"
-        r"credential|auth[_-]?token|bearer)\b\s*[=:]\s*\S{6,}"
+        r"(?i)(?:[a-z0-9]+[._-])*(?:password|passwd|pwd|secret|token|api[_-]?key|"
+        r"access[_-]?key|secret[_-]?access[_-]?key|private[_-]?key|client[_-]?secret|"
+        r"credential|auth[_-]?token|bearer)\s*[=:]\s*\S{6,}"
     )
     # Well-known credential token shapes.
     _TOKEN_SHAPE_RES = (
